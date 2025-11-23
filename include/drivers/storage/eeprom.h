@@ -1,0 +1,12 @@
+#ifndef DRIVERS_STORAGE_EEPROM_H
+#define DRIVERS_STORAGE_EEPROM_H
+
+#define EEARL_SHIFT (0)
+#define EEARL_MASK  (0xFFUL << EEARL_SHIFT)
+#define MAKE_EEARL(addr) ((addr & EEARL_MASK) >> EEARL_SHIFT)
+
+#define EEARH_SHIFT (8)
+#define EEARH_MASK  (0x3UL << EEARH_SHIFT)
+#define MAKE_EEARH(addr) ((addr & EEARH_MASK) >> EEARH_SHIFT)
+
+#endif // DRIVERS_STORAGE_EEPROM_H
