@@ -8,7 +8,13 @@ OBJDUMP = ${CROSS_COMPILE}objdump
 
 
 # Files and directories
+NANOFS_DIR = $(CURDIR)
+export NANOFS_DIR
+
+include $(NANOFS_DIR)/Common.mk
+
 BUILD_DIR ?= build
+TOOLS_DIR = tools
 
 TARGET_ELF = $(BUILD_DIR)/nanofs.elf
 TARGET_LST = $(BUILD_DIR)/nanofs.lst
@@ -16,10 +22,10 @@ TARGET_SYM = $(BUILD_DIR)/nanofs.sym
 TARGET_BIN = $(BUILD_DIR)/nanofs.bin
 TARGET_HEX = $(BUILD_DIR)/nanofs.hex
 
-SOURCES_C = $(shell find -name "*.c" | cut -d '/' -f 2-)
+SOURCES_C = $(shell find -name "*.c" | cut -d '/' -f 2- | grep -v -E "$(TOOLS_DIR)")
 OBJECTS_C = $(patsubst %.c,$(BUILD_DIR)/%.o,$(SOURCES_C))
 
-SOURCES_ASM = $(shell find -name "*.asm" | cut -d '/' -f 2-)
+SOURCES_ASM = $(shell find -name "*.asm" | cut -d '/' -f 2- | grep -v -E "$(TOOLS_DIR)")
 OBJECTS_ASM = $(patsubst %.asm,$(BUILD_DIR)/%.o,$(SOURCES_ASM))
 
 SUB_DIRS += $(shell dirname $(OBJECTS_C))
@@ -46,26 +52,8 @@ LDSCRIPT = avr328p.ld
 LDFLAGS = -T $(LDSCRIPT)
 
 
-# verbosity
-ifeq ($(VERBOSE),y)
-V :=
-V_AS :=
-V_CC :=
-V_LD :=
-V_OBJCOPY :=
-V_OBJDUMP :=
-else    # VERBOSE != y
-V = @
-V_AS = @echo "  AS      " $(patsubst $(CURDIR)/%,%,$@);
-V_CC = @echo "  CC      " $(patsubst $(CURDIR)/%,%,$@);
-V_LD = @echo "  LD      " $(patsubst $(CURDIR)/%,%,$@);
-V_OBJCOPY = @echo "  OBJCOPY " $(patsubst $(CURDIR)/%,%,$@);
-V_OBJDUMP = @echo "  OBJDUMP " $(patsubst $(CURDIR)/%,%,$@);
-endif   # VERBOSE
-
-
 # Build rules
-all: $(BUILD_DIR) $(TARGET_ELF) $(TARGET_BIN) $(TARGET_LST) $(TARGET_SYM) $(TARGET_HEX)
+all: $(BUILD_DIR) $(TARGET_ELF) $(TARGET_BIN) $(TARGET_LST) $(TARGET_SYM) $(TARGET_HEX) tools
 
 run: all flash eeprom serial
 
@@ -100,6 +88,12 @@ $(TARGET_HEX): $(TARGET_ELF)
 	$(V_OBJCOPY)$(OBJCOPY) -R .eeprom -O ihex $< $@
 
 
+tools:
+	$(MAKE) -C $(TOOLS_DIR) -f Tools.mk all
+
+tools-clean:
+		$(MAKE) -C $(TOOLS_DIR) -f Tools.mk clean
+
 # Programmer
 DUDE = avrdude
 DUDECONF ?= avrdude.conf
@@ -123,7 +117,7 @@ serial:
 	${MINICOM} ${MINICOMOPTS}
 
 
-.PHONY: clean
+.PHONY: clean tools-clean tools
 
-clean:
+clean: tools-clean
 	rm -rf $(BUILD_DIR)
