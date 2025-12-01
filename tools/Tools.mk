@@ -22,7 +22,7 @@ CCFLAGS += -DCC_HOST -I$(INCLUDE)
 MKFS = __mkfs
 
 TARGET_TOOLS = \
-	$(MKFS)
+	$(BUILD_DIR)/$(MKFS)
 
 
 # Build rules
@@ -34,7 +34,12 @@ $(BUILD_DIR)/%:
 	$(V)mkdir -p $@
 
 __%: %.c
-	$(V_CC)${CC} ${CCFLAGS} $< -o $(BUILD_DIR)/$@
+	$(V_CC)${CC} ${CCFLAGS} $< -o $@
+
+
+# Tools usage
+mkfs: $(MKFS)
+	./$(MKFS)
 
 clean:
 	rm -rf $(BUILD_DIR)

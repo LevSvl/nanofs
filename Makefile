@@ -53,7 +53,7 @@ LDFLAGS = -T $(LDSCRIPT)
 
 
 # Build rules
-all: $(BUILD_DIR) $(TARGET_ELF) $(TARGET_BIN) $(TARGET_LST) $(TARGET_SYM) $(TARGET_HEX) tools
+all: $(BUILD_DIR) $(TARGET_ELF) $(TARGET_BIN) $(TARGET_LST) $(TARGET_SYM) $(TARGET_HEX) mkfs
 
 run: all flash eeprom serial
 
@@ -88,11 +88,16 @@ $(TARGET_HEX): $(TARGET_ELF)
 	$(V_OBJCOPY)$(OBJCOPY) -R .eeprom -O ihex $< $@
 
 
+# Tools common
 tools:
 	$(MAKE) -C $(TOOLS_DIR) -f Tools.mk all
 
 tools-clean:
-		$(MAKE) -C $(TOOLS_DIR) -f Tools.mk clean
+	$(MAKE) -C $(TOOLS_DIR) -f Tools.mk clean
+
+# Tools separately
+mkfs:
+	$(MAKE) -C $(TOOLS_DIR) -f Tools.mk mkfs
 
 # Programmer
 DUDE = avrdude
