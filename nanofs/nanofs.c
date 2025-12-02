@@ -80,7 +80,7 @@ int fs_low_level_inode fs_close(int fd)
     return 0;
 }
 
-int fs_read(int fd, void *buf, uint32_t size)
+int fs_read(int fd, void *buf, uint8_t size)
 {
     struct file *f;
     int bytes_read = 0;
@@ -104,7 +104,7 @@ int fs_read(int fd, void *buf, uint32_t size)
     return bytes_read;
 }
 
-int fs_write(int fd, void *buf, uint32_t size)
+int fs_write(int fd, void *buf, uint8_t size)
 {
     struct file *f;
     int bytes_written = 0;
@@ -197,7 +197,7 @@ int fs_do_initial_checks()
     info("Open \""README"\" ok, fd == %d\n", fd);
 
     /* Test read */
-    n = fs_read(fd, tmp_buf, 1000);
+    n = fs_read(fd, tmp_buf, 200);
     tmp_buf[README_SIZE] = 0;
     if (n != README_SIZE) {
 #ifdef CONFIG_DEBUG_DATA
@@ -217,7 +217,7 @@ int fs_do_initial_checks()
         err("Close \""README"\" failed\n");
         fs_panic();
     }
-    n = fs_read(fd, tmp_buf, 1000);
+    n = fs_read(fd, tmp_buf, 200);
     if (n != -1) {
         err("Can read \""README"\" after close, read %d bytes\n", n);
         fs_panic();
@@ -252,7 +252,7 @@ int fs_do_initial_checks()
     }
     info("Reopen after write \""README"\" ok, fd == %d\n", fd);
 
-    n = fs_read(fd, tmp_buf, 1000);
+    n = fs_read(fd, tmp_buf, 200);
     if (memcmp(tmp_buf, s, strlen(s))) {
         err("Read after write \""README"\" failed,"
             "read %d bytes\n", n);
@@ -271,40 +271,40 @@ int fs_do_initial_checks()
         fs_panic();
     }
 
-    // /* Test open with trunc */
-    // fd = fs_open(README, FS_O_TRUNC);
-    // if (fd < 0) {
-    //     err("File \""README"\" reopen after write failed\n");
-    //     fs_panic();
-    // }
-    // info("Reopen after write \""README"\" ok, fd == %d\n", fd);
+    /* Test open with trunc */
+    fd = fs_open(README, FS_O_TRUNC);
+    if (fd < 0) {
+        err("File \""README"\" reopen after write failed\n");
+        fs_panic();
+    }
+    info("Reopen after write \""README"\" ok, fd == %d\n", fd);
 
-    // n = fs_read(fd, tmp_buf, 1000);
-    // if (n > 0) {
-    //     err("Read after write \""README"\" failed,"
-    //         "read %d bytes\n", n);
-    //     fs_panic();
-    // }
-    // info("Read from truncated \""README"\" ok, fd == %d, n = %d, \n", fd, n);
-    // r = fs_close(fd);
-    // if (r != 0) {
-    //     err("Close after testing write to \""README"\" failed\n");
-    //     fs_panic();
-    // }
+    n = fs_read(fd, tmp_buf, 200);
+    if (n > 0) {
+        err("Read after write \""README"\" failed,"
+            "read %d bytes\n", n);
+        fs_panic();
+    }
+    info("Read from truncated \""README"\" ok, fd == %d, n = %d, \n", fd, n);
+    r = fs_close(fd);
+    if (r != 0) {
+        err("Close after testing write to \""README"\" failed\n");
+        fs_panic();
+    }
 
-    // /* Test open with creation */
-    // fd = fs_open("/foo", FS_O_CREATE | FS_O_RDWR);
-    // if (fd < 0) {
-    //     err("File \"/foo\" reopen after write failed\n");
-    //     fs_panic();
-    // }
-    // info("Open with creation \"/foo\" ok, fd == %d\n", fd);
-    // r = fs_close(fd);
-    // if (r != 0) {
-    //     err("Close \"/foo\" failed\n");
-    //     fs_panic();
-    // }
-    // info("Close \"/foo\" ok\n");
+    /* Test open with creation */
+    fd = fs_open("/foo", FS_O_CREATE | FS_O_RDWR);
+    if (fd < 0) {
+        err("File \"/foo\" reopen after write failed\n");
+        fs_panic();
+    }
+    info("Open with creation \"/foo\" ok, fd == %d\n", fd);
+    r = fs_close(fd);
+    if (r != 0) {
+        err("Close \"/foo\" failed\n");
+        fs_panic();
+    }
+    info("Close \"/foo\" ok\n");
 
     info("done OK\n");
 

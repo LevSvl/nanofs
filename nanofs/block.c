@@ -21,33 +21,27 @@
 /* ======================================================================== */
 
 
-uint32_t fs_low_level_storage
+uint8_t fs_low_level_storage
 fs_block_alloc()
 {
     struct inmem_block *inmem_block;
-    uint32_t *dbm0, *dbm;
-    uint32_t max_off = inodeStartAddr - dataBitMapAddr;
-    int data_block_num = 0;
+    uint16_t *dbm;
+    uint8_t data_block_num = 0;
 
-    inmem_block = inmem_read_block(sb->dbmap_start);
+    inmem_block = inmem_read_block(sb->bmap_start_block);
     if (inmem_block == 0)
         return 0;
 
-    dbm0 = (uint32_t *)inmem_block->inmem_addr;
+    dbm = (uint16_t *)inmem_block->inmem_addr + sb->dbmap_start_byte;
 
-    for (dbm = dbm0;
-        (uint8_t *)dbm - (uint8_t *)dbm0 < max_off;
-         dbm++)  
-        {
-            int i = 0;
-            for (i = 0; i < BITS_PER_BITMAP(uint32_t); i++) {
-                if (*dbm & (1U << i))
-                    continue;
-                *dbm |= (1U << i);
-                inmem_block_free(inmem_block, 1);
-                return dataStartAddr + data_block_num + i*BSIZE;
+    while (data_block_num < BITS_PER_DATA_BITMAP) {
+        if (*dbm & (1U << data_block_num)) {
+            data_block_num++;
+            continue;
         }
-        data_block_num += i;
+        *dbm |= (1U << data_block_num);
+        inmem_block_free(inmem_block, 1);
+        return data_block_num;
     }
 
     inmem_block_free(inmem_block, 0);
@@ -55,21 +49,20 @@ fs_block_alloc()
 }
 
 void fs_low_level_storage
-fs_block_free(uint32_t dev_block_addr)
+fs_block_free(uint16_t dev_block_addr)
 {
     struct inmem_block *inmem_block;
-    uint32_t *dbm;
-    int data_block_num;
+    uint16_t *dbm;
+    uint8_t data_block_num;
 
-    inmem_block = inmem_read_block(sb->dbmap_start);
+    inmem_block = inmem_read_block(sb->bmap_start_block);
     if (inmem_block == 0)
         return;
     
     data_block_num = BLOCK_NUM(dev_block_addr - dataStartAddr);
-    dbm = (uint32_t *)inmem_block->inmem_addr + \
-        (data_block_num / BITS_PER_BITMAP(uint32_t));
+    dbm = (uint16_t *)inmem_block->inmem_addr + sb->dbmap_start_byte;
 
-    *dbm &= ~(1U << (data_block_num % BITS_PER_BITMAP(uint32_t)));
+    *dbm &= ~(1U << data_block_num);
     inmem_block_free(inmem_block, 1);
 }
 
@@ -78,12 +71,12 @@ void block_init(void)
     fs_base = (uintptr_t)0;
 }
 
-void block_read(char *dst, int block_num)
+void block_read(char *dst, uint8_t block_num)
 {
     storage_dev.fn_read(dst, (void *)BLOCK_ADDR(block_num), BSIZE);
 }
 
-void block_write(char *src, int block_num)
+void block_write(char *src, uint8_t block_num)
 {
     storage_dev.fn_write((void *)BLOCK_ADDR(block_num), src, BSIZE);
 }

@@ -15,7 +15,7 @@ enum state {UNUSED, BUSY};
 struct inmem_block {
     enum state state;
     char inmem_addr[BSIZE];
-    uint32_t dev_block_num;
+    uint8_t dev_block_num;
 };
 
 struct inmem_inode {
@@ -28,7 +28,7 @@ struct inmem_inode {
 /* Inmemory interface                                                       */
 /* ======================================================================== */
 
-struct inmem_block * fs_low_level_storage inmem_read_block(int block_num);
+struct inmem_block * fs_low_level_storage inmem_read_block(uint8_t block_num);
 
 void fs_low_level_storage
 inmem_block_free(struct inmem_block *inmem_block, int is_dirty);

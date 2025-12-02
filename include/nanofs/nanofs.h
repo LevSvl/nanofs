@@ -34,8 +34,8 @@ extern uintptr_t fs_base;
 
 int fs_init();
 int fs_open(char * path, int flags);
-int fs_read(int fd, void *buf, uint32_t size);
-int fs_write(int fd, void *buf, uint32_t size);
+int fs_read(int fd, void *buf, uint8_t size);
+int fs_write(int fd, void *buf, uint8_t size);
 int fs_close(int fd);
 
 #include <nanofs/info.h>

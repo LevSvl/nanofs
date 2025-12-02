@@ -13,7 +13,7 @@ struct inmem_inode inmem_inodes[INMEM_INODES_NUM];
 /* ======================================================================== */
 
 struct inmem_block * fs_low_level_storage
-inmem_read_block(int block_num)
+inmem_read_block(uint8_t block_num)
 {
     for (int i = 0; i < INMEM_BLOCKS_NUM; i++) {
         if (inmem_blocks[i].state == UNUSED) {
