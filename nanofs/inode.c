@@ -14,15 +14,10 @@
 uint8_t fs_low_level_storage
 fs_inode_alloc()
 {
-    struct inmem_block *inmem_block;
-    uint8_t *ibm;
+    uint16_t *ibm;
     uint8_t inode_num = 0;
 
-    inmem_block = inmem_read_block(sb->bmap_start_block);
-    if (inmem_block == 0)
-        return 0;
-
-    ibm = (uint8_t *)(inmem_block->inmem_addr + sb->ibmap_start_byte);
+    ibm = (uint16_t *)&sb->ibmap;
 
     while (inode_num < BITS_PER_INODE_BITMAP) {
         if (*ibm & (1U << inode_num)) {
@@ -30,28 +25,18 @@ fs_inode_alloc()
             continue;
         }
         *ibm |= (1U << inode_num);
-        inmem_block_free(inmem_block, 1);
+        write_sb();
         return inode_num;
     }
 
-    inmem_block_free(inmem_block, 0);
     return -1;
 }
 
 void fs_low_level_storage
 fs_inode_free(uint8_t inum)
 {
-    struct inmem_block *inmem_block;
-    uint8_t *ibm;
-
-    inmem_block = inmem_read_block(sb->bmap_start_block);
-    if (inmem_block == 0)
-        return;
-
-    ibm = (uint8_t *)(inmem_block->inmem_addr + sb->ibmap_start_byte);
-
-    *ibm &= ~(1U << inum);
-    inmem_block_free(inmem_block, 1);
+    sb->ibmap &= ~(1U << inum);
+    write_sb();
 }
 
 char * fs_strtok_by_sep(char * path, char * name)
@@ -104,7 +89,7 @@ fs_store_inode_by_inum(inode_t *ip, uint8_t inum)
     if (inum >= MAXFILES)
         return -1;
 
-    inmem_block = inmem_read_block(sb->iblocks_start);
+    inmem_block = inmem_read_block(BLOCK_NUM(inodeStartAddr));
     if (inmem_block == 0)
         return -1;
 
@@ -364,19 +349,6 @@ int fs_low_level_storage fs_read_from_inode(inode_t *ip, uint8_t off,
     bytes_read += req_to_read_here;
 
     return bytes_read;
-}
-
-superblock_t *inode_init_sb(uint8_t sb_num)
-{
-    struct inmem_block *inmem_sb;
-
-    inmem_sb = inmem_read_block(sb_num);
-    if (inmem_sb == 0) {
-        printf("Failed to read superblock");
-        return (superblock_t *)1;
-    }
-
-    return (superblock_t *)inmem_sb->inmem_addr;
 }
 
 int inode_init_root(uint8_t root_inum)

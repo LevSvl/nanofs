@@ -29,6 +29,4 @@ int fs_low_level_storage fs_read_from_inode(inode_t *ip, uint8_t off,
 
 int inode_init_root(uint8_t root_inum);
 
-superblock_t *inode_init_sb(uint8_t sb_num);
-
 #endif // NANOFS_INODE_H

@@ -13,7 +13,7 @@
 /* ======================================================================== */
 
 #define FS_TOTAL_SIZE   (16)
-#define FS_MAGIC        (0x4eb14eb1U)
+#define FS_MAGIC        (0x4eb1)
 #define FS_BLOCK_SIZE   (64)
 
 #define BSIZE     (FS_BLOCK_SIZE)
@@ -29,14 +29,14 @@
 /* Filesystem descriptors                                                   */
 /* ======================================================================== */
 
+/* Size of superblock - 8 bytes */
 typedef struct superblock {
-  uint32_t magic;               // Magic bytes
-  uint32_t total_blocks_num;    // Size of file system
-  uint32_t dblocks_num;         // Number of data blocks
-  uint32_t iblocks_num;         // Number of inodes.
-  uint32_t iblocks_start;       // Block number of first inode block
-  uint32_t dbmap_start;         // Block number of first data map block
-  uint32_t ibmap_start;         // Block number of first inode map block
+    uint16_t magic;               // Magic bytes
+    uint8_t total_blocks_num;    // Size of file system
+    uint8_t iblocks_num;         // Number of inodes.
+    uint8_t dblocks_num;         // Number of data blocks
+    uint16_t ibmap;
+    uint16_t dbmap;
 } superblock_t;
 
 enum {
@@ -44,34 +44,34 @@ enum {
     TYPE_FILE = 2,
 };
 
-/* Size of inode - 32 bytes */
-typedef struct inode
+/* Size of inode - 8 bytes */
+typedef     struct inode
 {
-  uint16_t type;
-  uint16_t nlink;
-  uint32_t size;
-  uint32_t addr[NDIRECT];
-  volatile uint8_t align[8];
+    uint8_t size;
+    uint16_t b_addr;
+    uint16_t b_size;
+    uint8_t type;
+    uint8_t align[8];
 } inode_t;
 
+/* Size of dirent - 16 bytes */
 typedef struct dirent
 {
-  uint8_t inum;
-  uint32_t reclen;
-  uint32_t strlen;
-  volatile uint8_t align0[3];
-  char name[MAXFNAME];
-  volatile uint8_t align1[12];
+    uint16_t reclen;
+    uint16_t strlen;
+    uint8_t inum;
+    char name[8];
+    uint8_t align[3];
 } dirent_t;
 
 struct file {
-  enum { FD_NONE, FD_INODE, FD_DEVICE } type;
-  int ref; // reference count
-  char readable;
-  char writable;
-  struct inode *ip;  // FD_INODE and FD_DEVICE
-  uint32_t off;          // FD_INODE
-  short major;       // FD_DEVICE
+    enum { FD_NONE, FD_INODE, FD_DEVICE } type;
+    int ref; // reference count
+    char readable;
+    char writable;
+    struct inode *ip;  // FD_INODE and FD_DEVICE
+    uint8_t off;          // FD_INODE
+    uint16_t last_access_time_ms;
 };
 
 
@@ -79,18 +79,26 @@ struct file {
 /* Filesystem layout                                                        */
 /* ======================================================================== */
 
-#define inodeBitMapAddr   BSIZE
-#define dataBitMapAddr    2*BSIZE
-#define BITS_PER_BITMAP(T)  (T) (sizeof(T)*8)
+#define inodeBitMapAddr   (BSIZE)
+#define dataBitMapAddr    (2*BSIZE)
 
-#define inodeStartAddr    3*BSIZE
-#define dataStartAddr     5*BSIZE
+#define inodeBlkNum       (3)
+#define dataBlkNum        (FS_TOTAL_SIZE - inodeBlkNum - 1)
+
+
+
+#define BITS_PER_BITMAP(T)  (T) (sizeof(T)*8)
+#define BITS_PER_INODE_BITMAP (udiv4(inodeBlkNum*BSIZE, sizeof(inode_t)))
+#define BITS_PER_DATA_BITMAP  (dataBlkNum)
+
+#define inodeStartAddr    (1*BSIZE)
+#define dataStartAddr     (inodeStartAddr + inodeBlkNum*BSIZE)
 
 #define blk(inum)         (udiv4(inum*sizeof(inode_t), BSIZE))
 // #define sector(blk)       ((blk*BSIZE + inodeStartAddr)/SECSIZE)
 
-#define MAXFILES          (udiv4(dataStartAddr - inodeStartAddr,sizeof(inode_t)))
-#define MAX_BLOCKS_PER_FILE NDIRECT
+#define MAXFILES          (BITS_PER_INODE_BITMAP)
+#define MAX_BLOCKS_PER_FILE 1
 
 #define inum(off)         (udiv4(off - inodeStartAddr,sizeof(inode_t)))
 #define inode_off(inum)   (inum*sizeof(inode_t))

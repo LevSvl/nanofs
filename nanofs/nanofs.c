@@ -11,6 +11,7 @@ extern uintptr_t nanofs_end[];
 uintptr_t fs_base;
 inode_t *current_dir;
 superblock_t * sb;
+struct inmem_block *__inmem_sb;
 
 extern struct inmem_block inmem_blocks[INMEM_BLOCKS_NUM];
 extern struct inmem_inode inmem_inodes[INMEM_INODES_NUM];
@@ -138,8 +139,8 @@ int fs_init()
 {
     block_init();
     inmem_init();
-    sb = inode_init_sb(0);
 
+    read_sb();
     if ((sb->magic != FS_MAGIC) || inode_init_root(ROOTINO))
         return 1;
 
@@ -158,10 +159,10 @@ int fs_init()
     // printf("                        \n");
     // printf("                        \n");
     // printf("                        \n");
-    // printf("Size of superblock: %d bytes \n", sizeof(struct superblock));
-    // printf("Size of inode: %d bytes \n", sizeof(inode_t));
-    // printf("Size of dirent: %d bytes\n", sizeof(dirent_t));
-    // printf("Size of file: %d bytes  \n", sizeof(struct file));
+    printf("Size of superblock: %d bytes \n", sizeof(struct superblock));
+    printf("Size of inode: %d bytes \n", sizeof(inode_t));
+    printf("Size of dirent: %d bytes\n", sizeof(dirent_t));
+    printf("Size of file: %d bytes  \n", sizeof(struct file));
     // printf("                        \n");
     // printf("                        \n");
     // printf("                        \n");

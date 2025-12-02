@@ -43,4 +43,26 @@ int fs_close(int fd);
 #include <nanofs/inmem.h>
 #include <nanofs/inode.h>
 
+/*
+ * Not for directly usage
+ */
+extern struct inmem_block *__inmem_sb;
+
+static inline void read_sb()
+{
+    __inmem_sb = inmem_read_block(0);
+    if (__inmem_sb == 0) {
+        printf("Failed to read superblock");
+        while (1) ;
+    }
+
+    sb = (superblock_t *)__inmem_sb->inmem_addr;
+}
+
+static inline void write_sb()
+{
+    inmem_block_free(__inmem_sb, 1);
+    read_sb();
+}
+
 #endif /* NANOFS_NANOFS_H */

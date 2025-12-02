@@ -24,15 +24,11 @@
 uint8_t fs_low_level_storage
 fs_block_alloc()
 {
-    struct inmem_block *inmem_block;
     uint16_t *dbm;
     uint8_t data_block_num = 0;
 
-    inmem_block = inmem_read_block(sb->bmap_start_block);
-    if (inmem_block == 0)
-        return 0;
 
-    dbm = (uint16_t *)inmem_block->inmem_addr + sb->dbmap_start_byte;
+    dbm = (uint16_t *)&sb->dbmap;
 
     while (data_block_num < BITS_PER_DATA_BITMAP) {
         if (*dbm & (1U << data_block_num)) {
@@ -40,30 +36,24 @@ fs_block_alloc()
             continue;
         }
         *dbm |= (1U << data_block_num);
-        inmem_block_free(inmem_block, 1);
+        write_sb();
         return data_block_num;
     }
 
-    inmem_block_free(inmem_block, 0);
     return 0;
 }
 
 void fs_low_level_storage
 fs_block_free(uint16_t dev_block_addr)
 {
-    struct inmem_block *inmem_block;
     uint16_t *dbm;
     uint8_t data_block_num;
-
-    inmem_block = inmem_read_block(sb->bmap_start_block);
-    if (inmem_block == 0)
-        return;
     
     data_block_num = BLOCK_NUM(dev_block_addr - dataStartAddr);
-    dbm = (uint16_t *)inmem_block->inmem_addr + sb->dbmap_start_byte;
+    dbm = &sb->dbmap;
 
     *dbm &= ~(1U << data_block_num);
-    inmem_block_free(inmem_block, 1);
+    write_sb();
 }
 
 void block_init(void)
