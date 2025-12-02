@@ -1,7 +1,5 @@
 include $(NANOFS_DIR)/Common.mk
 
-export VERBOSE
-
 CROSS_COMPILE := 
 
 CC = ${CROSS_COMPILE}gcc
@@ -19,10 +17,10 @@ INCLUDE = $(NANOFS_DIR)/include/nanofs
 CCFLAGS += -DCC_HOST -I$(INCLUDE)
 
 # Tools definitions
-MKFS = __mkfs
+MKFS = $(BUILD_DIR)/__mkfs
 
 TARGET_TOOLS = \
-	$(BUILD_DIR)/$(MKFS)
+	$(MKFS)
 
 
 # Build rules
@@ -33,13 +31,14 @@ $(BUILD_DIR):
 $(BUILD_DIR)/%:
 	$(V)mkdir -p $@
 
-__%: %.c
+$(BUILD_DIR)/__%: %.c
 	$(V_CC)${CC} ${CCFLAGS} $< -o $@
 
 
 # Tools usage
-mkfs: $(MKFS)
-	./$(MKFS)
+mkfs: $(BUILD_DIR) $(MKFS)
+	./$(MKFS) Readme
+	mv $(NANOFS_IMAGE) $(NANOFS_DIR)/$(NANOFS_IMAGE)
 
 clean:
 	rm -rf $(BUILD_DIR)

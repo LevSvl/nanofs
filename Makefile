@@ -10,6 +10,7 @@ OBJDUMP = ${CROSS_COMPILE}objdump
 # Files and directories
 NANOFS_DIR = $(CURDIR)
 export NANOFS_DIR
+export VERBOSE
 
 include $(NANOFS_DIR)/Common.mk
 
@@ -35,6 +36,7 @@ INCLUDE += include
 
 # Filesystem image
 NANOFS_IMAGE = nanofs.img
+export NANOFS_IMAGE
 TARGET_NANOFS_IMAGE = $(BUILD_DIR)/$(NANOFS_IMAGE).o 
 
 
@@ -72,8 +74,8 @@ $(BUILD_DIR)/%.o: %.c
 	$(V_CC)${CC} ${CCFLAGS} -c $< -o $@
 
 
-$(TARGET_ELF): $(SUB_DIRS) $(OBJECTS_C) $(OBJECTS_ASM) $(TARGET_NANOFS_IMAGE)
-	$(V_LD)${LD} ${LDFLAGS} $(OBJECTS_ASM) $(OBJECTS_C) $(TARGET_NANOFS_IMAGE) -o $@
+$(TARGET_ELF): $(SUB_DIRS) $(OBJECTS_C) $(OBJECTS_ASM)
+	$(V_LD)${LD} ${LDFLAGS} $(OBJECTS_ASM) $(OBJECTS_C) -o $@
 
 $(TARGET_LST): $(TARGET_ELF)
 	$(V_OBJDUMP)$(OBJDUMP) -d $< > $@
