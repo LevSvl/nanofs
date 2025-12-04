@@ -102,8 +102,6 @@ void timer_init()
     /* Setup default clocksource divisor */
     timer_setup_clk_div(TIMER_DEFAULT_DIV);
 
-    delay_ms(100);
-
     printf( "### [%l] Init timer done.\n"
             "### System frequency = %l\n"
             "### Timer frequency  = %l\n", 

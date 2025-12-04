@@ -158,7 +158,7 @@ inode_t * fs_low_level_storage fs_find_inode_in_dir(inode_t *ip_parent, char *fn
 
         curr_dirent = (dirent_t *)current_block;
 
-        while ((uintptr_t)current_block - (uintptr_t)curr_dirent < BSIZE) {
+        while ((uintptr_t)curr_dirent - (uintptr_t)current_block < BSIZE) {
             if (strncmp(curr_dirent->name, fname, strlen(fname)) == 0) {
                 ip_child = fs_get_inode_by_inum(curr_dirent->inum);
                 inmem_block_free(inmem_block, 0);
