@@ -37,7 +37,7 @@ typedef struct superblock {
   uint32_t iblocks_start;       // Block number of first inode block
   uint32_t dbmap_start;         // Block number of first data map block
   uint32_t ibmap_start;         // Block number of first inode map block
-} superblock_t;
+} __attribute__((packed)) superblock_t;
 
 enum {
     TYPE_DIR  = 1,
@@ -52,7 +52,7 @@ typedef struct inode
   uint32_t size;
   uint32_t addr[NDIRECT];
   volatile uint8_t align[8];
-} inode_t;
+} __attribute__((packed)) inode_t;
 
 typedef struct dirent
 {
@@ -61,8 +61,8 @@ typedef struct dirent
   uint32_t strlen;
   volatile uint8_t align0[3];
   char name[MAXFNAME];
-  volatile uint8_t align1[12];
-} dirent_t;
+  volatile uint8_t align1[8];
+} __attribute__((packed)) dirent_t;
 
 struct file {
   enum { FD_NONE, FD_INODE, FD_DEVICE } type;
@@ -72,7 +72,7 @@ struct file {
   struct inode *ip;  // FD_INODE and FD_DEVICE
   uint32_t off;          // FD_INODE
   short major;       // FD_DEVICE
-};
+} __attribute__((packed));
 
 
 /* ======================================================================== */

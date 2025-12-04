@@ -10,15 +10,14 @@
 #include <sys/stat.h>
 #include <sys/mman.h>
 
-#define udiv4(x, y) (x / y)
-#define umod4(x, y) (x % y)
+#define offsetof(TYPE, MEMBER) ((size_t) &((TYPE *)0)->MEMBER)
 
-typedef uint16_t _daddr_t;
+#define udiv4(x,y) ((uint32_t)x / (uint32_t)y)
+#define umod4(x,y) ((uint32_t)x % (uint32_t)y)
 
 #include "layout.h"
 
 uintptr_t img_base;
-
 
 /* ======================================================================== */
 /* Filesystem creation helpers                                              */
@@ -64,50 +63,64 @@ void img_close(int fd)
     close(fd);
 }
 
-void superblock_update()
-{
-    memcpy((void *)img_base, &sb, sizeof(superblock_t));
-}
-
 void superblock_create()
 {
-    sb.magic = FS_MAGIC;
     sb.total_blocks_num = FS_TOTAL_SIZE;
-    sb.iblocks_num = inodeBlkNum;
-    sb.dblocks_num = dataBlkNum;
-    sb.ibmap = 0;
-    sb.dbmap = 0;
+    sb.magic = FS_MAGIC;
+    sb.dbmap_start = dataBitMapAddr / BSIZE;
+    sb.ibmap_start = inodeBitMapAddr / BSIZE;
+    sb.iblocks_start = inodeStartAddr / BSIZE;
+    sb.iblocks_num = (dataStartAddr - inodeStartAddr) / BSIZE;
+    sb.dblocks_num = (FS_TOTAL_SIZE*BSIZE - dataStartAddr) / BSIZE;
 
-    assert(sizeof(sb) <= BSIZE);
-
-    superblock_update();
+    memcpy((void *)img_base, &sb, sizeof(sb));
 }
 
-_daddr_t ialloc()
+uint32_t ialloc()
 {
-    uint16_t *ibit_map = &sb.ibmap;
+    uint32_t *ibit_map;
+    int target_inum = 0;
 
-    for (int i = 0; i < BITS_PER_INODE_BITMAP; i++) {
-        if (*ibit_map & (1 << i))
-            continue;
-        *ibit_map |= (1 << i);
-        superblock_update();
-        return inodeStartAddr+ (_daddr_t)i*sizeof(inode_t);
+    ibit_map = (uint32_t *)IMG(img_base, inodeBitMapAddr);
+
+    while (ibit_map < (uint32_t *)IMG(img_base, dataStartAddr)) 
+    {
+        int i;
+
+        for (i = 0; i < BITS_PER_BITMAP(uint32_t); i++) {
+            if (*ibit_map & (1ULL << i))
+                continue;
+            *ibit_map |= (1ULL << i);
+            return inodeStartAddr + ((target_inum + i)*sizeof(inode_t));
+        }
+
+        target_inum += i;
+        ibit_map++;
     }
 
-    return 0; 
+  return 0; 
 }
 
-_daddr_t balloc()
+uint32_t balloc()
 {
-    uint16_t *dbit_map = &sb.dbmap;
+    uint64_t *dbit_map;
+    int target_block_num = 0;
 
-    for (int i = 0; i < BITS_PER_DATA_BITMAP; i++) {
-        if (*dbit_map & (1U << i))
-            continue;
-        *dbit_map |= (1U << i);
-        superblock_update();
-        return dataStartAddr + (_daddr_t)i*BSIZE;
+    dbit_map = (uint64_t *)IMG(img_base, dataBitMapAddr);
+
+    while (dbit_map < (uint64_t *)IMG(img_base, inodeStartAddr)) 
+    {
+        int i;
+
+        for (i = 0; i < BITS_PER_BITMAP(uint64_t); i++) {
+            if (*dbit_map & (1ULL << i))
+                continue;
+            *dbit_map |= (1ULL << i);
+            return dataStartAddr + target_block_num + i*BSIZE;
+        }
+
+        target_block_num += i;
+        dbit_map++;
     }
 
     return 0;
@@ -115,20 +128,23 @@ _daddr_t balloc()
 
 void rootdir_create()
 {
+    uint64_t *ibit_map;
     inode_t inode_root;
-    _daddr_t inode_addr_root;
+    uintptr_t inode_addr_root;
 
+    inode_root.nlink = 1;
     inode_root.size = 0;
     inode_root.type = TYPE_DIR;
+    for (int i = 0; i < NDIRECT; i++) {
+        inode_root.addr[i] = balloc();
+        assert(inode_root.addr[i] > 0);
+    }
 
-    inode_root.b_addr = balloc();
-    assert(inode_root.b_addr > 0);
-
-    sb.ibmap |= (1 << ROOTINO);
-    superblock_update();
+    ibit_map = (uint64_t *)IMG(img_base, inodeBitMapAddr);
+    *ibit_map |= (0x1ULL << ROOTINO);
 
     inode_addr_root = inodeStartAddr + ROOTINO*sizeof(inode_t);
-
+    
     memcpy((void *)IMG(img_base, inode_addr_root), &inode_root, sizeof(inode_t));
 }
 
@@ -140,7 +156,7 @@ void add_dirent(int parent_inum, dirent_t *dirent)
     inode_parent = (inode_t*)IMG(img_base, inodeStartAddr + parent_inum*sizeof(inode_t));
     assert(inode_parent->type != TYPE_FILE);
 
-    dirent_off = inode_parent->b_addr;
+    dirent_off = inode_parent->addr[blk(parent_inum)];
     assert(dirent_off > 0);
 
     while(((dirent_t *)IMG(img_base, dirent_off))->strlen)
@@ -154,15 +170,16 @@ void print_litle_fs_config()
     printf("                        \n");
     printf("                        \n");
     printf("                        \n");
-    printf("nanofs               \n");
+    printf("little-fs               \n");
     printf("Block size: %d bytes    \n", FS_BLOCK_SIZE);
     printf("Total size: %d blocks ( %d bytes)   \n", 
         sb.total_blocks_num, sb.total_blocks_num*BSIZE);
     printf("Data: %d blocks         \n", sb.dblocks_num);
     printf("Data start block: %d    \n", dataStartAddr / BSIZE);
-    printf("Data bitmap byte: 0x%02x  \n", sb.dbmap);
+    printf("Data bitmap start block: %d  \n", sb.dbmap_start);
     printf("Inodes: %d blocks       \n", sb.iblocks_num);
-    printf("Inodes bitmap byte: 0x%02x  \n", sb.ibmap);
+    printf("Inodes start block: %d  \n", sb.iblocks_start);
+    printf("Inodes bitmap start block: %d  \n", sb.ibmap_start);
     printf("Magic: 0x%8x            \n", sb.magic);
     printf("                        \n");
     printf("                        \n");
@@ -193,9 +210,9 @@ int main(int argc, char const *argv[])
 
     for (int file_cnt = 1; file_cnt < argc; file_cnt++) {
         int file_fd;
-        int file_size = 0, blocks_req;
+        int file_size, blocks_req;
         inode_t inode;
-        _daddr_t inode_off;
+        uint16_t inode_off;
         dirent_t dirent;
         const char *file_name = argv[file_cnt];
         
@@ -207,12 +224,11 @@ int main(int argc, char const *argv[])
 
 
         /* Only count file size */
-        for (int bytes_read = 0x1; bytes_read > 0;) {
+        for (uint16_t bytes_read = UINT16_MAX; bytes_read > 0;) {
             bytes_read = read(file_fd, tmp_buf, BSIZE);
             file_size += bytes_read;
         }
-        printf("%s size: %d bytes \n", file_name, file_size);
-        assert(file_size < MAX_BLOCKS_PER_FILE*BSIZE);
+        assert(file_size < BSIZE*NDIRECT);
         /* Count blocks required */
         blocks_req = file_size / BSIZE;
         if (blocks_req == 0 && file_size > 0)
@@ -225,14 +241,15 @@ int main(int argc, char const *argv[])
 
         inode.size = file_size;
         inode.type = TYPE_FILE;
+        inode.nlink = 1;
 
-        for (int i = 0; i < MAX_BLOCKS_PER_FILE; i++) {
+        for (int i = 0; i < NDIRECT; i++) {
             if (i < blocks_req) {
-                inode.b_addr = balloc();
-                assert(inode.b_addr != 0);
+                inode.addr[i] = balloc();
+                assert (inode.addr[i] != 0);
             }
             else {
-                inode.b_addr = 0;
+                inode.addr[i] = 0;
             }
         }
 
@@ -240,20 +257,23 @@ int main(int argc, char const *argv[])
         memcpy((void *)IMG(img_base, inode_off), &inode, sizeof(inode_t));
 
         /* Place data for file */
-        uint16_t i, bytes_left;
-        for (i = 0, bytes_left = file_size; i < blocks_req; i++) {
-            if (inode.b_addr == 0)
+        for (uint16_t i = 0, bytes_left = file_size; i < NDIRECT; i++) {
+            if (inode.addr[i] == 0)
                 continue;
 
+            lseek(file_fd, i*BSIZE, SEEK_SET);
+
             memset(tmp_buf, 0, BSIZE);
-            lseek(file_fd, 0, SEEK_SET);
             bytes_left -= read(file_fd, tmp_buf, BSIZE);
-            memcpy((void *)IMG(img_base, inode.b_addr), tmp_buf, BSIZE);
+            assert(!(((i + 1) == NDIRECT) && bytes_left != 0));
+
+            memcpy((void *)IMG(img_base, inode.addr[i]), tmp_buf, BSIZE);
         }
-        assert(bytes_left == 0);
 
         /* Add file into the root directory */
-        dirent.inum = inum(inode_off);
+        dirent.inum = udiv4((inode_off - inodeStartAddr), sizeof(inode_t));
+        printf("%x\n", dirent.inum);
+
         dirent.strlen = strlen(file_name);
         dirent.reclen = sizeof(dirent_t);
         memcpy(&dirent.name, file_name, strlen(file_name));
@@ -266,3 +286,4 @@ int main(int argc, char const *argv[])
     
     return 0;
 }
+
