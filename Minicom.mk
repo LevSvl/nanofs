@@ -1,0 +1,4 @@
+# Console
+BAUDRATE = 38400
+MINICOM = minicom
+MINICOMOPTS += -D $(COM) -b $(BAUDRATE)

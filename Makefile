@@ -8,6 +8,8 @@ OBJDUMP = ${CROSS_COMPILE}objdump
 
 
 # Files and directories
+COM ?= /dev/ttyUSB0
+
 NANOFS_DIR = $(CURDIR)
 export NANOFS_DIR
 export VERBOSE
@@ -101,13 +103,9 @@ tools-clean:
 mkfs:
 	$(MAKE) -C $(TOOLS_DIR) -f Tools.mk mkfs
 
-# Programmer
-DUDE = avrdude
-DUDECONF ?= avrdude.conf
-COM ?= /dev/ttyUSB0
 
-DUDEOPTS += -v -V -patmega328p
-DUDEOPTS += -carduino -b57600 -D -P${COM}
+
+include Dude.mk
 
 flash: $(TARGET_HEX)
 	${DUDE} ${DUDEOPTS} -Uflash:w:$(TARGET_HEX)
@@ -115,10 +113,8 @@ flash: $(TARGET_HEX)
 eeprom:
 	${DUDE} ${DUDEOPTS} -Ueeprom:w:$(NANOFS_IMAGE)
 
-# Console
-BAUDRATE = 38400
-MINICOM = minicom
-MINICOMOPTS += -D $(COM) -b $(BAUDRATE)
+
+include Minicom.mk
 
 serial:
 	${MINICOM} ${MINICOMOPTS}
