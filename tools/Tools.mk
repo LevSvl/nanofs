@@ -8,37 +8,24 @@ LD = ${CROSS_COMPILE}ld
 OBJCOPY = ${CROSS_COMPILE}objcopy
 OBJDUMP = ${CROSS_COMPILE}objdump
 
-# Files and directories
-BUILD_DIR = build
+TOOLS_LIST = $(shell ls $(CURDIR) | grep -v *.mk)
+TOOL_NAME = $(subst build-,,$(subst clean-,,$(subst use-,,$(subst tools-,,$@))))
 
-INCLUDE = $(NANOFS_DIR)/include/nanofs
-
-
-CCFLAGS += -DCC_HOST -I$(INCLUDE)
-
-# Tools definitions
-MKFS = $(BUILD_DIR)/__mkfs
-
-TARGET_TOOLS = \
-	$(MKFS)
-
+export
 
 # Build rules
 all: $(BUILD_DIR) $(TARGET_TOOLS)
 
-$(BUILD_DIR):
-	$(V)mkdir -p $(BUILD_DIR)
-$(BUILD_DIR)/%:
-	$(V)mkdir -p $@
+tools-build-all:
+	$(foreach tool,$(TOOLS_LIST),$(MAKE) -C $(tool) -f $(tool).mk build)
+tools-clean-all:
+	$(foreach tool,$(TOOLS_LIST),$(MAKE) -C $(tool) -f $(tool).mk clean)
 
-$(BUILD_DIR)/__%: %.c
-	$(V_CC)${CC} ${CCFLAGS} $< -o $@
+tools-build-%:
+	$(MAKE) -C $(TOOL_NAME) -f $(TOOL_NAME).mk build
 
+tools-clean-%:
+	$(MAKE) -C $(TOOL_NAME) -f $(TOOL_NAME).mk clean
 
-# Tools usage
-mkfs: $(BUILD_DIR) $(MKFS)
-	./$(MKFS) Readme
-	mv $(NANOFS_IMAGE) $(NANOFS_DIR)/$(NANOFS_IMAGE)
-
-clean:
-	rm -rf $(BUILD_DIR)
+tools-use-%:
+	$(MAKE) -C $(TOOL_NAME) -f $(TOOL_NAME).mk use

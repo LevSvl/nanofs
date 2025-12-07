@@ -55,9 +55,11 @@ CCFLAGS += -Wl,--gc-sections
 LDSCRIPT = avr328p.ld
 LDFLAGS = -T $(LDSCRIPT)
 
+# for internal tools usage. See example in all rule
+USE-TOOL = tools-use-$(1)
 
 # Build rules
-all: $(BUILD_DIR) $(TARGET_ELF) $(TARGET_BIN) $(TARGET_LST) $(TARGET_SYM) $(TARGET_HEX) mkfs
+all: $(BUILD_DIR) $(TARGET_ELF) $(TARGET_BIN) $(TARGET_LST) $(TARGET_SYM) $(TARGET_HEX) $(call USE-TOOL,mkfs)
 
 run: all flash eeprom serial
 
@@ -93,15 +95,15 @@ $(TARGET_HEX): $(TARGET_ELF)
 
 
 # Tools common
-tools:
-	$(MAKE) -C $(TOOLS_DIR) -f Tools.mk all
+export TOOLS_DIR
+tools-build-%:
+	$(MAKE) -C $(TOOLS_DIR) -f Tools.mk $@
 
-tools-clean:
-	$(MAKE) -C $(TOOLS_DIR) -f Tools.mk clean
+tools-clean-%:
+	$(MAKE) -C $(TOOLS_DIR) -f Tools.mk $@
 
-# Tools separately
-mkfs:
-	$(MAKE) -C $(TOOLS_DIR) -f Tools.mk mkfs
+tools-use-%:
+	$(MAKE) -C $(TOOLS_DIR) -f Tools.mk $@
 
 
 
