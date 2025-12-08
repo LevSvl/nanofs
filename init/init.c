@@ -18,7 +18,7 @@ int main()
     storage_dev.fn_init();
 
     fs_init();
-    // run_shell();
+    run_shell();
 
     traps_disable();
     while (1) {} ;

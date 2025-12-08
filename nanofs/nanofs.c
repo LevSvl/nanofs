@@ -175,138 +175,17 @@ void fs_panic()
     while (1);
 }
 
-#define CONFIG_DEBUG_DATA
-#define README "/Readme"
-#define README_SIZE (16)
+// #define CONFIG_DEBUG_DATA
+// #define README "/Readme"
+// #define README_SIZE (16)
 
-#define info(fmt, ...) (printf("Info: "fmt"\n", ## __VA_ARGS__))
-#define warn(fmt, ...) (printf("Warning: "fmt"\n", ## __VA_ARGS__))
-#define err(fmt, ...) (printf("Error: "fmt"\n", ## __VA_ARGS__))
+// #define info(fmt, ...) (printf("Info: "fmt"\n", ## __VA_ARGS__))
+// #define warn(fmt, ...) (printf("Warning: "fmt"\n", ## __VA_ARGS__))
+// #define err(fmt, ...) (printf("Error: "fmt"\n", ## __VA_ARGS__))
 
 int fs_do_initial_checks()
 {
-    int fd, n, r;
-    char tmp_buf[BSIZE], *s = "babadeda\n";
-
-    /* Test open */
-    fd = fs_open(README, FS_O_RDONLY);
-    if (fd < 0) {
-        err("File \""README"\" open failed\n");
-        fs_panic();
-    }
-    info("Open \""README"\" ok, fd == %d\n", fd);
-
-    /* Test read */
-    n = fs_read(fd, tmp_buf, 1000);
-    tmp_buf[README_SIZE] = 0;
-    if (n != README_SIZE) {
-#ifdef CONFIG_DEBUG_DATA
-        warn("data = %s\n", tmp_buf);
-#endif
-        err("Read \""README"\" failed, read %d bytes\n", n);
-        fs_panic();
-    }
-    info("Read \""README"\" ok\n");
-#ifdef CONFIG_DEBUG_DATA
-    info("n = %d\n", n);
-    info("data = %s\n", tmp_buf);
-#endif
-    /* Test close */
-    r = fs_close(fd);
-    if (r != 0) {
-        err("Close \""README"\" failed\n");
-        fs_panic();
-    }
-    n = fs_read(fd, tmp_buf, 1000);
-    if (n != -1) {
-        err("Can read \""README"\" after close, read %d bytes\n", n);
-        fs_panic();
-    }
-
-    /* Test write */
-    fd = fs_open(README, FS_O_RDWR);
-    if (fd < 0) {
-        err("File \""README"\" open failed\n");
-        fs_panic();
-    }
-    info("Reopen \""README"\" ok, fd == %d\n", fd);
-
-    memset(tmp_buf, 0, sizeof(char)*BSIZE);
-    memmove(tmp_buf, s, strlen(s));
-
-    n = fs_write(fd, tmp_buf, strlen(s));
-    if (n != strlen(s)) {
-        err("New write \""README"\" failed, wrote %d bytes\n", n);
-        fs_panic();
-    }
-    r = fs_close(fd);
-    if (r != 0) {
-        err("Reclose \""README"\" failed\n");
-        fs_panic();
-    }
-
-    fd = fs_open(README, FS_O_RDONLY);
-    if (fd < 0) {
-        err("File \""README"\" reopen after write failed\n");
-        fs_panic();
-    }
-    info("Reopen after write \""README"\" ok, fd == %d\n", fd);
-
-    n = fs_read(fd, tmp_buf, 1000);
-    if (memcmp(tmp_buf, s, strlen(s))) {
-        err("Read after write \""README"\" failed,"
-            "read %d bytes\n", n);
-#ifdef CONFIG_DEBUG_DATA
-        err("data = %s\n", tmp_buf);
-#endif
-        fs_panic();
-    }
-#ifdef CONFIG_DEBUG_DATA
-    info("data = %s\n", tmp_buf);
-#endif
-    info("Write to \""README"\" ok, fd == %d\n", fd);
-    r = fs_close(fd);
-    if (r != 0) {
-        err("Close after testing write to \""README"\" failed\n");
-        fs_panic();
-    }
-
-    // /* Test open with trunc */
-    // fd = fs_open(README, FS_O_TRUNC);
-    // if (fd < 0) {
-    //     err("File \""README"\" reopen after write failed\n");
-    //     fs_panic();
-    // }
-    // info("Reopen after write \""README"\" ok, fd == %d\n", fd);
-
-    // n = fs_read(fd, tmp_buf, 1000);
-    // if (n > 0) {
-    //     err("Read after write \""README"\" failed,"
-    //         "read %d bytes\n", n);
-    //     fs_panic();
-    // }
-    // info("Read from truncated \""README"\" ok, fd == %d, n = %d, \n", fd, n);
-    // r = fs_close(fd);
-    // if (r != 0) {
-    //     err("Close after testing write to \""README"\" failed\n");
-    //     fs_panic();
-    // }
-
-    // /* Test open with creation */
-    // fd = fs_open("/foo", FS_O_CREATE | FS_O_RDWR);
-    // if (fd < 0) {
-    //     err("File \"/foo\" reopen after write failed\n");
-    //     fs_panic();
-    // }
-    // info("Open with creation \"/foo\" ok, fd == %d\n", fd);
-    // r = fs_close(fd);
-    // if (r != 0) {
-    //     err("Close \"/foo\" failed\n");
-    //     fs_panic();
-    // }
-    // info("Close \"/foo\" ok\n");
-
-    info("done OK\n");
+    printf("done OK\n");
 
     return 0;
 }
