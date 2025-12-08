@@ -8,3 +8,10 @@ void console_init()
 
     printf("Console initialized\n");
 }
+
+void console_read(char *dst, int size)
+{
+    int i = 0;
+    while (size--)
+        dst[i++] = usart_getc();
+}

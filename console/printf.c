@@ -77,6 +77,7 @@ static void printptr(unsigned int n)
 void printf(char* fmt, ...)
 {
     va_list ap;
+    char c;
     char *p;
     int ival;
     char* sval; 
@@ -115,6 +116,10 @@ void printf(char* fmt, ...)
                 sval = "(null)";
             for(; *sval; sval++)
                 usart_transmit(*sval);
+            break;
+        case 'c':
+            c = va_arg(ap, int);
+            usart_transmit(c);
             break;
         case 'p':
             ptrval = va_arg(ap, unsigned long);
