@@ -7,16 +7,14 @@
 
 #include <nanofs/nanofs.h>
 
-#define CMD_BUF_SZ  (4)
+#define CMD_BUF_SZ  (16)
 
-int ls(char *argc, char **argv)
-{
-    printf("its ls\n");
-    return 0;
-}
+extern int ls_main(int, char **);
+extern int sleep_main(int, char **);
 
-static int (*cmds[])(char *, char **) = { \
-    ls,
+static int (*cmds[])(int, char **) = { \
+    ls_main,
+    sleep_main,
     0
 };
 
@@ -41,7 +39,7 @@ static inline char* read_cmd_set_position(struct shell_cmd *cmd,
 
 static int parse_cmd(struct shell_cmd *cmd)
 {
-    char *cmd_names[] = {"ls", 0};
+    char *cmd_names[] = {"ls", "sleep", 0};
 
     cmd->index = -1;
 
@@ -59,7 +57,7 @@ static int read_cmd(struct shell_cmd *cmd)
     char c, *dst;
     int i = 0, stage = 1;
 
-    printf("@> ");
+    printf("# ");
 
     while (i < CMD_BUF_SZ - 1 && stage <= 3) {
         dst = read_cmd_set_position(cmd, stage, i);
@@ -67,12 +65,15 @@ static int read_cmd(struct shell_cmd *cmd)
             return 0;
 
         c = usart_getc();
-        printf("%c", c);
 
-        if (c == '\r' || c == '\n') {
+        if (c == '\r') {
             *dst = 0;
+            printf("%c\n", c);
             break;
         }
+
+        printf("%c", c);
+
         if (c == ' ') {
             *dst = 0;
             i = 0;
@@ -87,9 +88,9 @@ static int read_cmd(struct shell_cmd *cmd)
 
 static void eval_cmd(struct shell_cmd *cmd)
 {
-    char **argv = {cmd->arg1, cmd->arg2};
+    char *argv[] = {cmd->name, cmd->arg1, cmd->arg2};
     if (cmd->index >= 0)
-        cmds[cmd->index](cmd->name, argv);
+        cmds[cmd->index](2, argv);
 }
 
 void run_shell(void)
