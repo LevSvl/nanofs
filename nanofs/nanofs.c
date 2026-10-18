@@ -127,6 +127,19 @@ int fs_write(int fd, void *buf, uint32_t size)
     return bytes_written;
 }
 
+int fs_fstat(int fd, struct stat *st)
+{
+    struct file *f;
+
+    if (fd < 0) {
+        return -1;
+    }
+
+    f = &opened_files[fd];
+    st->size = f->ip->size;
+    st->type = f->type;
+}
+
 
 /* ======================================================================== */
 /* Filesystem initialization                                                */
