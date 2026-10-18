@@ -11,10 +11,12 @@
 
 extern int ls_main(int, char **);
 extern int sleep_main(int, char **);
+extern int uptime_main(int, char **);
 
 static int (*cmds[])(int, char **) = { \
     ls_main,
     sleep_main,
+    uptime_main,
     0
 };
 
@@ -39,7 +41,7 @@ static inline char* read_cmd_set_position(struct shell_cmd *cmd,
 
 static int parse_cmd(struct shell_cmd *cmd)
 {
-    char *cmd_names[] = {"ls", "sleep", 0};
+    char *cmd_names[] = {"ls", "sleep", "uptime", 0};
 
     cmd->index = -1;
 

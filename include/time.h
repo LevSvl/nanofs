@@ -15,6 +15,7 @@ struct time_info {
     volatile uint32_t ticks;
     uint32_t freq;
     uint16_t clk_div;
+    volatile uint32_t jiffies;
 };
 
 static inline uint32_t now()

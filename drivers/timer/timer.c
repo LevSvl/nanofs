@@ -111,4 +111,5 @@ void timer_init()
 void timer_int_handler()
 {
     time_info.ticks += TIMER_MAX;
+    time_info.jiffies += 1;
 }
