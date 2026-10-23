@@ -16,8 +16,12 @@ int main()
     timer_init();
 
     storage_dev.fn_init();
+    printk("storage dev init done\n");
 
     fs_init();
+    printk("nanofs init init done\n");
+
+    printk("starting shell\n");
     run_shell();
 
     traps_disable();
