@@ -93,7 +93,7 @@ struct stat {
 #define BITS_PER_BITMAP(T)  (T) (sizeof(T)*8)
 
 #define inodeStartAddr    3*BSIZE
-#define dataStartAddr     5*BSIZE
+#define dataStartAddr     6*BSIZE
 
 #define blk(inum)         (udiv4(inum*sizeof(inode_t), BSIZE))
 // #define sector(blk)       ((blk*BSIZE + inodeStartAddr)/SECSIZE)
