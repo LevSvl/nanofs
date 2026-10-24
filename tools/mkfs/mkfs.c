@@ -26,7 +26,7 @@ uintptr_t img_base;
 superblock_t sb;
 char tmp_buf[BSIZE];
 
-int img_open()
+int img_open(void)
 {
     int img_fd;
     unsigned long bytes_written = 0;
@@ -63,7 +63,7 @@ void img_close(int fd)
     close(fd);
 }
 
-void superblock_create()
+void superblock_create(void)
 {
     sb.total_blocks_num = FS_TOTAL_SIZE;
     sb.magic = FS_MAGIC;
@@ -76,7 +76,7 @@ void superblock_create()
     memcpy((void *)img_base, &sb, sizeof(sb));
 }
 
-uint32_t ialloc()
+uint32_t ialloc(void)
 {
     uint32_t *ibit_map;
     int target_inum = 0;
@@ -101,7 +101,7 @@ uint32_t ialloc()
   return 0; 
 }
 
-uint32_t balloc()
+uint32_t balloc(void)
 {
     uint64_t *dbit_map;
     int target_block_num = 0;
@@ -126,17 +126,18 @@ uint32_t balloc()
     return 0;
 }
 
-void rootdir_create()
+void rootdir_create(void)
 {
     uint64_t *ibit_map;
     inode_t inode_root;
     uintptr_t inode_addr_root;
 
     inode_root.nlink = 1;
-    inode_root.size = 0;
+    inode_root.size = BSIZE*NDIRECT;
     inode_root.type = TYPE_DIR;
     for (int i = 0; i < NDIRECT; i++) {
         inode_root.addr[i] = balloc();
+        printf("rootdir %d baddr %ld\n", i+1,(uintptr_t )inode_root.addr[i]);
         assert(inode_root.addr[i] > 0);
     }
 
@@ -150,22 +151,27 @@ void rootdir_create()
 
 void add_dirent(int parent_inum, dirent_t *dirent)
 {
-    uint32_t dirent_off;
+    uint32_t dirent_base, dirent_off;
     inode_t *inode_parent;
+    int bnum = 0;
 
     inode_parent = (inode_t*)IMG(img_base, inodeStartAddr + parent_inum*sizeof(inode_t));
     assert(inode_parent->type != TYPE_FILE);
 
-    dirent_off = inode_parent->addr[blk(parent_inum)];
+    dirent_base = dirent_off = inode_parent->addr[bnum++];
     assert(dirent_off > 0);
 
-    while(((dirent_t *)IMG(img_base, dirent_off))->strlen)
+    while(((dirent_t *)IMG(img_base, dirent_off))->strlen && (bnum < NDIRECT)) {
         dirent_off += sizeof(dirent_t);
+
+        if ((dirent_off - dirent_base) == BSIZE)
+            dirent_off = inode_parent->addr[bnum++];
+    }
   
     memcpy((void *)IMG(img_base, dirent_off), dirent, sizeof(dirent_t));
 }
 
-void print_litle_fs_config()
+void print_litle_fs_config(void)
 {
     printf("                        \n");
     printf("                        \n");
@@ -228,6 +234,7 @@ int main(int argc, char const *argv[])
             bytes_read = read(file_fd, tmp_buf, BSIZE);
             file_size += bytes_read;
         }
+        printf("file %s size: %ld\n", file_name, (size_t)file_size);
         assert(file_size < BSIZE*NDIRECT);
         /* Count blocks required */
         blocks_req = file_size / BSIZE;
@@ -237,6 +244,7 @@ int main(int argc, char const *argv[])
 
         /* Create inode for file */
         inode_off = ialloc();
+        printf("file %s inode root offset: %lx\n", file_name, (uintptr_t)inode_off - inodeStartAddr);
         assert(inode_off > 0);
 
         inode.size = file_size;
@@ -272,7 +280,6 @@ int main(int argc, char const *argv[])
 
         /* Add file into the root directory */
         dirent.inum = udiv4((inode_off - inodeStartAddr), sizeof(inode_t));
-        printf("%x\n", dirent.inum);
 
         dirent.strlen = strlen(file_name);
         dirent.reclen = sizeof(dirent_t);
