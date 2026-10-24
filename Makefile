@@ -105,7 +105,7 @@ tools-clean-%:
 tools-use-%:
 	$(MAKE) -C $(TOOLS_DIR) -f Tools.mk $@
 
-
+fs: tools-build-mkfs tools-use-mkfs
 
 include Dude.mk
 
@@ -122,7 +122,7 @@ serial:
 	${MINICOM} ${MINICOMOPTS}
 
 
-.PHONY: clean tools-clean tools
+.PHONY: clean tools-clean-% tools fs
 
-clean: tools-clean
+clean: tools-clean-mkfs
 	rm -rf $(BUILD_DIR)
