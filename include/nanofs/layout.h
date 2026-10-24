@@ -74,12 +74,15 @@ struct file {
   short major;       // FD_DEVICE
 } __attribute__((packed));
 
+#ifndef MKFS
+
 struct stat {
     int type;
     uint32_t size;
     uint8_t ino;
 } __attribute__((packed));
 
+#endif
 
 /* ======================================================================== */
 /* Filesystem layout                                                        */
