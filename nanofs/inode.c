@@ -228,6 +228,10 @@ inode_t * fs_low_level_inode fs_get_inode(char *path)
 
     if (*path == '/') {
         ip_parent = fs_get_inode_by_inum(ROOTINO);
+
+        if (strlen(path) == 1)
+            return ip_parent;
+
         path++;
     } else if (*path == 0) {
         return (inode_t *)0;
