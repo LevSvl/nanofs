@@ -57,16 +57,15 @@ ls(char *path)
       printf("ls: path too long\n");
       break;
     }
-    memcpy(buf, path, strlen(path));
+    memmove(buf, path, strlen(path));
     p = buf+strlen(buf);
     *p++ = '/';
-
     while(fs_read(fd, &de, sizeof(de)) == sizeof(de)){
-      if(de.inum == 0)
+      if((de.inum == ROOTINO) || !de.reclen)
         continue;
       memmove(p, de.name, DIRSIZ);
       p[DIRSIZ] = 0;
-      if(fs_fstat(buf, &st) < 0){
+      if(fs_stat(buf, &st) < 0){
         printf("ls: cannot stat %s\n", buf);
         continue;
       }

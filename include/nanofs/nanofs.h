@@ -37,6 +37,8 @@ int fs_open(char * path, int flags);
 int fs_read(int fd, void *buf, uint32_t size);
 int fs_write(int fd, void *buf, uint32_t size);
 int fs_close(int fd);
+int fs_fstat(int fd, struct stat *st);
+int fs_stat(char *path, struct stat *st);
 
 #include <nanofs/info.h>
 #include <nanofs/block.h>

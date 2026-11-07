@@ -131,15 +131,42 @@ int fs_fstat(int fd, struct stat *st)
 {
     struct file *f;
 
-    if (fd < 0) {
+    if (fd < 0 || fd >= MAX_FILES_OPENED)
         return -1;
-    }
 
     f = &opened_files[fd];
+    if (f->ip == 0)
+        return -1;
+
     st->size = f->ip->size;
     st->type = f->type;
+
+    return 0;
 }
 
+int fs_stat(char *path, struct stat *st)
+{
+    int fd;
+    struct inode_t *ip;
+    struct file *f;
+
+    ip = fs_get_inode(path);
+    if (!ip)
+        return -1;
+    
+    for (fd = 0; fd < opened_files_cnt; fd++)
+        if (opened_files[fd].ip == ip)
+            break;
+
+    f = &opened_files[fd];
+    if (f->ip == 0)
+        return -1;
+
+    st->size = f->ip->size;
+    st->type = f->type;
+
+    return 0;
+}
 
 /* ======================================================================== */
 /* Filesystem initialization                                                */
